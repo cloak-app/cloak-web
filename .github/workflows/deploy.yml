@@ -1,0 +1,40 @@
+name: Build and Deploy # 为GitHub Actions工作流命名
+
+on:
+  push:
+    branches:
+      - main # 当推送到main分支时触发工作流
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # 使用Ubuntu操作系统作为运行环境
+
+    steps:
+      - name: Checkout # 步骤1：从仓库检出代码
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false # 不保留凭据
+
+      - name: Deploy to server # 步骤2：部署到服务器
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.MACBOOK_PRO }}
+          port: 22
+          source: "."
+          target: "/workspace/html/cloak-web"
+          strip_components: 0
+
+      - name: Build and restart application # 步骤3：构建并重启应用
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.MACBOOK_PRO }}
+          port: 22
+          script: |
+            cd /workspace/html/cloak-web
+            pnpm install
+            pnpm run build
+            pm2 restart cloak-web
